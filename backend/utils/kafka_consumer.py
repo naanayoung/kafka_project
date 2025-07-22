@@ -17,6 +17,7 @@ from coupons.models import Coupon
 from users.models import User
 from events.models import Event
 
+
 # Kafka Consumer 설정
 consumer = KafkaConsumer(
         'coupon-topic',

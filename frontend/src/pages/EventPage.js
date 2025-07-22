@@ -6,7 +6,7 @@ function EventPage(){
 
 	useEffect(() => {
 		axios
-			.get("http://3.37.248.119:8000/api/events/")
+			.get("/api/events/")
 			.then((res) => {
 		    		console.log(res.data);
 				setEvents(res.data);

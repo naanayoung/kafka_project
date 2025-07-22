@@ -82,7 +82,8 @@ DATABASES = {
         'NAME': 'myapp',
         'USER': 'root',  # 또는 init.sql 에서 만든 사용자 지금은 루트유저밖에 없음
         'PASSWORD': 'root',
-        'HOST': '127.0.0.1',  # localhost라고 해두면 소켓 연결을 시도하기 때문에 TCP/IP 로 연결하지 못함.(Docker로 실행 중이기 때문에 TCP/IP로 연결해야됨)
+        'HOST': '127.0.0.1',
+        #'HOST': 'infra_mysql_1' DNS로 돌아가도록. 백,프론트 도커로 바꾸고 나서 : Docker 안에서 돌아가기 때문에 localhost x
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",

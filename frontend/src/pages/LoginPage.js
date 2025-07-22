@@ -10,7 +10,7 @@ const LoginPage = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {   // 백엔드(API)로 username, password 보냄
-			const response = await axios.post('http://3.37.248.119:8000/api/token/', {
+			const response = await axios.post('/api/token/', {
         			username,
         			password,
 			});

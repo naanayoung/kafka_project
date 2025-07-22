@@ -8,7 +8,7 @@ function EventDetail() {
 	const [message, setMessage] = useState('');
 
   	useEffect(() => {
-    		axios.get(`http://3.37.248.119:8000/api/events/${id}/`)
+    		axios.get(`/api/events/${id}/`)
       		.then(res => setEvent(res.data))
       		.catch(err => console.error(err));
   	}, [id]);
@@ -16,8 +16,7 @@ function EventDetail() {
   	const handleIssueCoupon = () => {
 		const token = localStorage.getItem('access') // JWT 액세스 토큰
     		console.log(token);
-		axios.post(
-			`http://3.37.248.119:8000/api/coupon-issue/`, 
+		axios.post(`/api/coupon-issue/`, 
 			{ event_id: id },
 			{
 				headers: {
