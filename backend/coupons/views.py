@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from kafka import KafkaProducer
 import json
-
+from utils.kafka_producer import send_coupon_issue
+import uuid
 
 class CouponViewSet(viewsets.ModelViewSet):
     queryset = Coupon.objects.all()
@@ -25,26 +26,34 @@ class IssueCouponView(APIView):
 
         if not event_id:
             return Response({"error": "event_id is required"}, status=400)
+        
+        # 요청 ID 생성(추후 상태 조회/ 멱등성 체크용)
+        request_id = str(uuid.uuid4())
 
-        # Kafka 메시지 전송
-        producer = KafkaProducer(
-            bootstrap_servers='3.37.248.119:29092',  # 또는 EC2 Kafka 주소
-            value_serializer=lambda v: json.dumps(v).encode('utf-8')
-        )
-        producer.send('coupon-topic', {
-            'event_id': event_id,
-            'user_id': user_id
-        })
-        producer.flush()
+        try:
+            # Kafka 메시지 전송
+            send_coupon_issue({
+                "request_id": request_id,
+                "event_id": int(event_id),
+                "user_id": int(user_id),
+            })
+        except Exception as e:
+            import traceback, sys
+            print("[coupon-issue] kafka send failed:", repr(e), file=sys.stderr)
+            traceback.print_exc()
+            return Response({"error": f"Kafka send failed: {e}"}, status=502)
+        
+        # 비동기 처리
+        return Response({"message": "쿠폰 발급 요청 완료", "request_id":request_id},
+                status=202)
 
-        return Response({"message": "쿠폰 발급 요청 완료"})
 
 # MyPage에서 발급된 쿠폰 목록 불러올 때
 class UserCouponList(APIView):
     permission_classes = [permissions.IsAuthenticated] # 인증된 사용자만
 
     def get(self, request, *args, **kwargs):
-        user_id = request.user.id
-        coupons = Coupon.objects.filter(user_id=user_id)
+        # id로 필터링해서 가져오기
+        coupons = (Coupon.objects.filter(user=request.user).select_related('event', 'user'))
         serializer = CouponSerializer(coupons, many=True)
         return Response(serializer.data)

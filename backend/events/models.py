@@ -12,11 +12,3 @@ class Event(models.Model):
     def __str__(self) :
         return self.title
 
-class ConsumedEvent(models.Model):
-    event_id = models.IntegerField()
-    title = models.CharField(max_length=200)
-    status = models.CharField(max_length=50)
-    consumed_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.event_id} - {self.title}"

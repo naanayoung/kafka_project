@@ -21,6 +21,6 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/', include(router.urls)),  # 하나의 router만 등록
-    path('api/coupon-issue/', IssueCouponView.as_view()),
-    path('api/coupon-list/', UserCouponList.as_view(), name='user-coupons'),
+    path('api/coupon-issue/', IssueCouponView.as_view()),  # EventDetial에서 랜덤쿠폰 발급할 때
+    path('api/coupon-list/', UserCouponList.as_view(), name='user-coupons'),  # MyPage에서 발급된 쿠폰 목록 불러올 떄
 ]

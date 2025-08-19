@@ -2,6 +2,7 @@ version: '3.8'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -10,6 +11,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
@@ -25,21 +27,24 @@ services:
 
   mysql:
     image: mysql:8.0
+    container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: myapp
     ports:
       - "3306:3306"
     volumes:
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
 
   redis:
     image: redis:7
+    container_name: redis
     ports:
       - "6379:6379"
-  
+
   schema-registry:
     image: confluentinc/cp-schema-registry:7.4.0
+    container_name: schema-registry
     depends_on:
       - kafka
     ports:
@@ -51,28 +56,80 @@ services:
 
   kafka-connect:
     image: confluentinc/cp-kafka-connect:7.4.0
+    container_name: kafka-connect
     depends_on:
       - kafka
     ports:
       - "8083:8083"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: kafka:9092
+      CONNECT_BOOTSTRAP_SERVERS: kafka:9092  # Kafka 브로커 주소 지정
       CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
       CONNECT_GROUP_ID: "kafka-connect-group"
       CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_OFFSET_STORAGE_TOPIC: "connect-offsets"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_STATUS_STORAGE_TOPIC: "connect-status"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_REST_PORT: 8083
 
+  # 오직 개발의 편의를 위해서...
   kafka-ui:
     image: provectuslabs/kafka-ui
+    container_name: kafka-ui
     ports:
       - "8080:8080"
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: backend
+    expose:
+      - "8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      DATABASE_URL: mysql://root:root@mysql:3306/myapp
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8000:8000"
+    depends_on:  # backend 시작 전에 준비될 것들.
+      - mysql
+      - kafka
+    volumes:
+      - ../backend:/app
+      - static_volume:/app/staticfiles
+
+  consumer:
+    build: ../backend  # backend와 동일 이미지 사용
+    container_name: consumer
+    depends_on:
+      - kafka
+      - mysql
+    command: ["python","manage.py","coupon_issue_consumer"]  # override됨
+    restart: unless-stopped  # 컨슈머는 상시 실행이 좋음
+
+  proxy:
+    build:
+      context: ..  # main-pj
+      dockerfile: infra/proxy/Dockerfile
+    container_name: proxy
+    expose:
+      - "80"
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume:/app/staticfiles
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data: {}
+  static_volume: {}

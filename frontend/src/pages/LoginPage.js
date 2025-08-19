@@ -13,6 +13,7 @@ const LoginPage = () => {
 			const response = await axios.post('/api/token/', {
         			username,
         			password,
+			}, { headers: {Authorization: undefined } //기존 헤더 제거
 			});
 	
 			// 토큰을 LocalStorage에 저장, 이후 요청시 헤더에 실어 보냄.

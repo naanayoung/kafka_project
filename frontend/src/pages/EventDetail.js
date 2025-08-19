@@ -16,6 +16,7 @@ function EventDetail() {
   	const handleIssueCoupon = () => {
 		const token = localStorage.getItem('access') // JWT 액세스 토큰
     		console.log(token);
+		console.log(typeof id);
 		axios.post(`/api/coupon-issue/`, 
 			{ event_id: id },
 			{
