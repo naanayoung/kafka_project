@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 from kafka import KafkaProducer
 from kafka.errors import NoBrokersAvailable
 
-BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka-1:9092")
 COUPON_ISSUE_TOPIC = os.getenv("COUPON_ISUUE_TOPIC", "coupon-topic")
 
 _producer: Optional[KafkaProducer] = None
@@ -14,7 +14,7 @@ _lock = threading.Lock()
 
 def build_producer() -> KafkaProducer:
     return KafkaProducer(
-            bootstrap_servers="kafka:9092",
+            bootstrap_servers="kafka-1:9092",
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             acks="all", # 저장됐는지, 복제본 저장됐는지 모두 응답 받음
             linger_ms=5,

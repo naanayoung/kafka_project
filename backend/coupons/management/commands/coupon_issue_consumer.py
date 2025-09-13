@@ -6,7 +6,7 @@ from coupons.models import Coupon, CouponIssueRequest
 import os
 from django.db import transaction
 
-BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka-1:9092")
 TOPIC = os.getenv("COUPON_ISSUE_TOPIC", "coupon-topic")
 GROUP = os.getenv("COUPON_CONSUMER_GROUP", "coupon-consumer-group")
 

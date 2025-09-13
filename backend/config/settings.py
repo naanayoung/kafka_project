@@ -1,4 +1,6 @@
 from pathlib import Path
+from datetime import timedelta
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -168,6 +170,12 @@ REST_FRAMEWORK = {
 }"""
 
 
-KAFKA_BOOTSTRAP_SERVERS = 'kafka:9092'
+KAFKA_BOOTSTRAP_SERVERS = "kafka-1:9092"
 
-SECURE_CROSS_ORIGIN_POENER_POLICY = None
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
+# access token 유효 시간 1시간으로 설정
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MIN", "60"))),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    }
