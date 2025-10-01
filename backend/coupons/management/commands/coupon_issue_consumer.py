@@ -3,29 +3,53 @@ from kafka import KafkaConsumer
 import json
 from kafka.errors import KafkaError
 from coupons.models import Coupon, CouponIssueRequest
-import os
+import os, sys, json
 from django.db import transaction
 
-BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka-1:9092")
-TOPIC = os.getenv("COUPON_ISSUE_TOPIC", "coupon-topic")
-GROUP = os.getenv("COUPON_CONSUMER_GROUP", "coupon-consumer-group")
-
+#BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
+#TOPIC = (
+#        os.getenv("COUPON_ISSUE_TOPIC")
+#        or os.getenv("KAFKA_TOPIC_NAME")
+#        or os.getenv("EVENT_TOPIC")
+#        or os.getenv("COUPON_TOPIC")
+#)
+#GROUP = os.getenv("COUPON_CONSUMER_GROUP", "coupon-consumer-group")
 
 class Command(BaseCommand):
     help = 'Kafka에서 메시지를 소비하고 DB에 저장합니다.'
+    
+    def add_arguments(self, parser):
+        parser.add_argument("--topic", dest="topic",
+                            default=os.getenv("KAFKA_TOPIC"))
+        parser.add_argument("--group", dest="group",
+                            default=os.getenv("KAFKA_CONSUMER_GROUP", "coupon-consumer-group"))
+        parser.add_argument("--bootstrap", dest="bootstrap",
+                            default=os.getenv("KAFKA_BOOTSTRAP_SERVERS", ""))
 
     running =True
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS(f" Coupon Consumer start (topic={TOPIC}, group={GROUP})"))
         
+        topic = options["topic"]
+        group = options["group"]
+        bootstrap = [x for x in (options["bootstrap"] or "").split(",") if x]
+
+        if not topic:
+            self.stderr.write("ERROR: KAFKA_TOPIC is not set and --topic not provided")
+            sys.exit(1)
+        if not bootstrap:
+            self.stderr.write("ERROR: KAFKA_BOOTSTRAP_SERVERS/--bootstrap is missing")
+            sys.exit(1)
+
+        self.stdout.write(f"Coupon Consumer start (topic={topic}, group={group})")
+       
         # consumer 객체 생성
         consumer = KafkaConsumer(
-            TOPIC,
-            bootstrap_servers=BOOTSTRAP.split(","),
-            group_id=GROUP,
-            auto_offset_reset='earliest',
-            enable_auto_commit=False,  # 수동 커밋
+            topic,
+            bootstrap_servers=bootstrap,
+            group_id=group,
+            auto_offset_reset='latest',
+            enable_auto_commit=True,  # 수동 커밋
             value_deserializer=lambda x: json.loads(x.decode('utf-8')),
             max_poll_records=50,
         )

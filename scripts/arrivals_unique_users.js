@@ -10,7 +10,7 @@ import exec from 'k6/execution';
 
 // 환경변수 
 const BASE_URL = __ENV.BASE_URL || 'http://proxy';
-const TOTAL = Number(__ENV.TOTAL || 15000);
+const TOTAL = Number(__ENV.TOTAL || 8000);
 const DURATION = __ENV.DURATION || '180s';        // 예: '5m' 또는 '300s'
 const USE_CSV = (__ENV.CSV || '1') === '1';     // 기본 CSV 사용
 const COMMON_TOKEN = __ENV.TOKEN || '';         // CSV 없을 때만 사용
@@ -66,7 +66,7 @@ export const options = {
       timeUnit: TIMEUNIT_STR,  // 예: '1m' 또는 '750s' 등
       duration: DURATION,
       preAllocatedVUs: 70,
-      maxVUs: 140,
+      maxVUs: MAX_VUS,
     },
   },
   thresholds: {

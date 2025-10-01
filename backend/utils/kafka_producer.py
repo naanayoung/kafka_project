@@ -6,15 +6,15 @@ from typing import Optional, Dict, Any
 from kafka import KafkaProducer
 from kafka.errors import NoBrokersAvailable
 
-BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka-1:9092")
-COUPON_ISSUE_TOPIC = os.getenv("COUPON_ISUUE_TOPIC", "coupon-topic")
+BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
+COUPON_ISSUE_TOPIC = os.getenv("COUPON_ISSUE_TOPIC")
 
 _producer: Optional[KafkaProducer] = None
 _lock = threading.Lock()
 
 def build_producer() -> KafkaProducer:
     return KafkaProducer(
-            bootstrap_servers="kafka-1:9092",
+            bootstrap_servers=[s.strip() for s in BOOTSTRAP.split(",")],
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             acks="all", # 저장됐는지, 복제본 저장됐는지 모두 응답 받음
             linger_ms=5,
@@ -47,6 +47,6 @@ def get_producer() -> KafkaProducer:
 # 랜덤 쿠폰 발급 요청 이벤트 생성시 사용
 def send_coupon_issue(data: dict):
     p = get_producer()
-    fut = p.send('coupon-topic', value=data)
+    fut = p.send(COUPON_ISSUE_TOPIC, value=data)
     fut.get(timeout=10) # 전송 보장 (ACK 대기)
 

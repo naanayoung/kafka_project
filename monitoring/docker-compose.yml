@@ -1,16 +1,23 @@
 version: "3.8"
 services:
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
+  victoria:
+    image: victoriametrics/victoria-metrics:latest
+    container_name: victoria
+    ports: ["8428:8428"]                # PromQL/Remote Write 엔드포인트
+    command: ["-retentionPeriod=7d"]    # 보관기간 예시
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - "9090:9090"
+      - vm_data:/victoria-metrics-data
     networks: [main_net]
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --web.enable-remote-write-receiver
+
+  vmagent:
+    image: victoriametrics/vmagent:latest
+    container_name: vmagent
+    command: >
+      -promscrape.config=/etc/vmagent.yml
+      -remoteWrite.url=http://victoria:8428/api/v1/write
+    volumes:
+      - ./vmagent.yml:/etc/vmagent.yml:ro
+    networks: [main_net]
 
   grafana:
     image: grafana/grafana
@@ -20,7 +27,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
-      - prometheus
+      - victoria
     networks: [main_net]
 
   # Kafka 지표(토픽/파티션/컨슈머그룹 lag 등)
@@ -28,7 +35,9 @@ services:
     image: danielqsj/kafka-exporter
     container_name: kafka-exporter
     command:
-      - "--kafka.server=kafka-1:9092"
+      - "--kafka.server=172.31.35.137:9092"
+      - "--kafka.server=172.31.37.83:9092"
+      - "--kafka.server=172.31.34.10:9092"
     ports:
       - "9308:9308"
     networks: [main_net]
@@ -37,6 +46,7 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
+    ports: ["8080:8080"]
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -45,9 +55,10 @@ services:
     networks: [main_net]
 
 volumes:
+  vm_data: {}
   grafana_data: {}
 
 networks:
   main_net:
     external: true    # infra에서 만든 main_net 사용
-
+    name: infra_main_net
